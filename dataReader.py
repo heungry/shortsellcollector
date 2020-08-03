@@ -386,7 +386,7 @@ def positionsMakeup(records, end, initial = False):
         return pd.DataFrame()
 
     start = min(records["Date"])
-    
+
     # Use the mean position of multiple records on same day and drop "Issuer" column
     records = records.groupby(["Holder", "ISIN", "Date"]).mean().reset_index()
     date = pd.date_range(start, end)
@@ -395,35 +395,33 @@ def positionsMakeup(records, end, initial = False):
     id = records.groupby(["Holder", "ISIN"]).count().index
     for holder, isin in id:
         record = records.loc[(records["Holder"] == holder) & (records["ISIN"] == isin), :].sort_values("Date").reset_index(drop = True)
+        record["Covering"] = 0
+        record["Increase"] = 0
+        for i in record.index:
+            if i == 0:
+                record.loc[i, "Increase"] = 1
+            else:
+                record.loc[i, "Covering"] = 1 if record.loc[i, "Position"] < record.loc[i - 1, "Position"] else 0
+                record.loc[i, "Increase"] = 1 if record.loc[i, "Position"] > record.loc[i - 1, "Position"] else 0
+        # Merge record and position
         position = pd.DataFrame({"Date": date}).set_index("Date").join(record.set_index("Date")).reset_index()
         position["Holder"] = holder
         position["ISIN"] = isin
-        position["Covering"] = 0
-        position["Increase"] = 0
-        for i in record.index:
-            ed = position.loc[position["Date"] == record.loc[i, "Date"], :].index.values[0]
-            if i == 0:
-                # update will pass
-                position["Covering"][ed] = 0
-                position["Increase"][ed] = 1
-            else:
-                position["Position"][op + 1: ed] = position["Position"][op]
-                position["Covering"][ed] = int(record.loc[i, "Position"] < record.loc[i - 1, "Position"])
-                position["Increase"][ed] = int(record.loc[i, "Position"] > record.loc[i - 1, "Position"])
-            op = ed
-        position["Position"][op + 1: ] = position["Position"][op]
-        op = position.loc[position["Date"] == record.loc[0, "Date"], :].index.values[0]
-        # Drop the nonrecorded items
-        positions = positions.append(position.loc[op: , :], ignore_index = True)
+        position["Covering"] = position["Covering"].fillna(0)
+        position["Increase"] = position["Increase"].fillna(0)
+        # Fill NA "Position" with forward value
+        position["Position"] = position["Position"].fillna(method='ffill')
+        position = position.dropna(axis = 0).reset_index(drop = True)
+        # Append to positions
+        positions = positions.append(position, ignore_index = True)
 
     if initial:
         return positions
 
     # Drop the first day for update purpose
     positions = positions.loc[positions["Date"] > start].reset_index(drop = True)
-
     return positions
-    
+        
 def stocksMakeup(prices, markets, initial = False):
     '''
     Make up the stock prices according to market time span.
@@ -449,14 +447,14 @@ def stocksMakeup(prices, markets, initial = False):
         price = prices.loc[prices["Ticker"] == ticker, :].sort_values("Date")
         stock = pd.DataFrame(index = markets.index).join(price)
         stock.reset_index(inplace = True)
-        i = stock.loc[stock["Date"] == price.reset_index().loc[0, "Date"], :].index.values[0]
-        if sum(stock.loc[i: , "Ticker"].isna()) > 0:
-            for j in stock.index[i + 1: ]:
-                if stock.loc[j, "Ticker"] is np.NaN:
-                    stock.loc[j, "Ticker"] = ticker
-                    # stock.loc[j, ["High", "Low", "Open", "Close", "Volume"]] = 0
-                    stock.loc[j, "Adj_close"] = stock.loc[j - 1, "Adj_close"]
-        stocks = stocks.append(stock.loc[i: , :], ignore_index = True)
+        # Fill nontrade days with forward "Ticker" and "Adj_Close"
+        stock["Ticker"] = stock["Ticker"].fillna(method='ffill')
+        stock["Adj_close"] = stock["Adj_close"].fillna(method='ffill')
+        stock.dropna(axis = 0, subset= ['Ticker'], inplace = True)
+        stocks = stocks.append(stock, ignore_index = True)
+
+    # Fill other NaN as 0
+    # stocks.fillna(0, inplace = True)
     
     if initial:
         return stocks
