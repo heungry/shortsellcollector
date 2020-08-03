@@ -1,6 +1,6 @@
-# Shortage Collector
+# Short-sell Collector
 
-Automatically collecting shortage data of German listed stocks with Python
+Automatically collect short selling data of German listed stocks with Python
 
 ## Data sources
 
