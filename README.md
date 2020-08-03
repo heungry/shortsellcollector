@@ -1,10 +1,10 @@
-# Short-sell Collector
+# Short sell Collector
 
 Automatically collect short selling data of German listed stocks with Python
 
 ## Data sources
 
-Shortage disclosures: Official webset [Bundesanzeiger](https://www.bundesanzeiger.de/ebanzwww/wexsservlet?page.navid=to_nlp_start)
+Short position disclosures: Official webset [Bundesanzeiger](https://www.bundesanzeiger.de/ebanzwww/wexsservlet?page.navid=to_nlp_start)
 
 ISIN/Ticker: The Financial Instrument Global Identifier (FIGI) [OpenFiGi-API](https://www.openfigi.com/api)
 
