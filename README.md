@@ -1,6 +1,6 @@
 # Short sell Collector
 
-Automatically collect short selling data of German listed stocks with Python
+Automatically collect short selling data of stocks listed on XETRA(Germany) with Python
 
 ## Data sources
 
