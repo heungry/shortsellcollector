@@ -4,7 +4,9 @@ import pandas_datareader as pdr
 from unidecode import unidecode
 from datetime import datetime as dt
 import requests
-from bs4 import BeautifulSoup as BS, Comment
+from selenium import webdriver
+import time
+import os
 
 def recordsDownloader(start, end):
     '''
@@ -28,42 +30,31 @@ def recordsDownloader(start, end):
     if t_start > t_end:
         t_start, t_end = t_end, t_start
 
-    base_url = 'https://www.bundesanzeiger.de/ebanzwww/wexsservlet'
-    payload = {'nlp_search_param.date_start:0': t_start.day,
-               'nlp_search_param.date_start:1': t_start.month,
-               'nlp_search_param.date_start:2': t_start.year,
-               'nlp_search_param.date_end:0': t_end.day,
-               'nlp_search_param.date_end:1': t_end.month,
-               'nlp_search_param.date_end:2': t_end.year,
-               'nlp_search_param.search_history': 'true',
-               '(page.navid=nlpresultlisttonlpresultlist_search)': 'Find short sales'
-               }
+    base_url = 'https://www.bundesanzeiger.de/pub/de/nlp'
     filename = "shortposition_" + t_start.strftime("%Y%m%d") + "_" + t_end.strftime("%Y%m%d") + ".csv"
 
-    with requests.session() as s:
-        # Ask for a sessionID from a GET request
-        r = s.get(base_url, params = {'page.navid': 'nlpstarttonlpstart_new'})
-        soup = BS(r.text, features = "lxml")
-    
-        # Extract the sessionID from the first comment
-        scom = soup.find(text = lambda text: isinstance(text, Comment))
-        start = scom.find('=') + 1
-        end = scom.find('&')
-        sid = scom[start : end]
-    
-        # Add sessionID to payload
-        payload['session.sessionid'] = sid
-    
-        # Scrape the CSV's url
-        r = s.post(base_url, data = payload)
-        soup = BS(r.text, features = "lxml")
-        csv_url = 'https://www.bundesanzeiger.de' + soup.find('a', {"title": "Als CSV herunterladen"}).get('href')
-    
-        # Doweload the CSV
-        download = s.get(csv_url)
-    
-    with open(filename, "wb") as file:
-        file.write(download.content)
+    # Initialize headless chromedriver
+    op = webdriver.ChromeOptions()
+    op.add_argument('headless')
+    driver = webdriver.Chrome(options = op)
+
+    # Search and Download data
+    driver.get(base_url)
+    driver.find_element_by_name("extended-search").click()
+    time.sleep(1)
+    driver.find_element_by_name("datumVon").send_keys(t_start.strftime("%d.%m.%Y"))
+    driver.find_element_by_name("datumBis").send_keys(t_end.strftime("%d.%m.%Y"))
+    driver.find_element_by_class_name("custom-control-label").click()
+    time.sleep(1)
+    driver.find_element_by_name("nlp-search-button").click()
+    time.sleep(1)
+    driver.find_element_by_xpath('.//a[@title="Als CSV herunterladen"]').click()
+    time.sleep(5)
+    driver.close()
+
+    # Rename the downloaded file
+    downloaded = max([f for f in os.listdir('./')], key=os.path.getctime)
+    os.rename(src = downloaded, dst = filename)
     
     # Update logging
     logging = "=" * 50 + "\n" + str(dt.now()) + ": Download CSV file '{}'\n".format(filename) + "=" * 50 + "\n\n"

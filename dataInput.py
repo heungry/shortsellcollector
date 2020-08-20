@@ -190,8 +190,8 @@ def updatedInpute(end):
 
         # stocks
         markets = pdr.DataReader("^GDAXI", 'yahoo', "2012-01-01", end)
-        stocks = dr.stocksMakeup(prices, markets, initial = True)
-        stocks.to_sql(name = "stocks", con = con, if_exists = "append", index = False)
+        stocks_new = dr.stocksMakeup(prices, markets, initial = True)
+        stocks_new.to_sql(name = "stocks", con = con, if_exists = "append", index = False)
     
     # 5. Update markets
     markets = pdr.DataReader("^GDAXI", 'yahoo', start, end)
