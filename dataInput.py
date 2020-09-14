@@ -114,6 +114,16 @@ def initialInpute(end):
     stocks.to_sql(name = "stocks", con = con, if_exists = "append", index = False)
     markets.to_sql(name = "markets", con = con, if_exists = "append", index = True)
 
+    # Manually update sta_view
+    cur = con.cursor()
+    cur.execute('DROP TABLE IF EXISTS sta_records;')
+    cur.execute('''CREATE TABLE sta_records AS 
+        SELECT Date,
+            COUNT(DISTINCT Holder) AS num_ISIN,
+            COUNT(DISTINCT ISIN) AS num_Issuer,
+            SUM(Covering) AS num_Coverring, SUM(Increase) AS num_Increase
+        FROM positions WHERE Position > 0 GROUP BY Date;''')
+
     #Close the connection
     con.close()
     print("Initialized to {}: Done.".format(end))
@@ -200,6 +210,16 @@ def updatedInpute(end):
 
     markets.to_sql(name = "markets", con = con, if_exists = "append", index = True)
     
+    # Manually update sta_view
+    cur = con.cursor()
+    cur.execute('DROP TABLE IF EXISTS sta_records;')
+    cur.execute('''CREATE TABLE sta_records AS 
+        SELECT Date,
+            COUNT(DISTINCT Holder) AS num_ISIN,
+            COUNT(DISTINCT ISIN) AS num_Issuer,
+            SUM(Covering) AS num_Coverring, SUM(Increase) AS num_Increase
+        FROM positions WHERE Position > 0 GROUP BY Date;''')
+
     #Close the connection
     con.close()
     print("Updated to {}: Done.".format(end))
