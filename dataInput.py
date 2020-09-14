@@ -119,9 +119,10 @@ def initialInpute(end):
     cur.execute('DROP TABLE IF EXISTS sta_records;')
     cur.execute('''CREATE TABLE sta_records AS 
         SELECT Date,
-            COUNT(DISTINCT Holder) AS num_ISIN,
-            COUNT(DISTINCT ISIN) AS num_Issuer,
-            SUM(Covering) AS num_Coverring, SUM(Increase) AS num_Increase
+            COUNT(DISTINCT Holder) AS num_Holder,
+            COUNT(DISTINCT ISIN) AS num_ISIN,
+            SUM(Covering) AS num_Coverring,
+            SUM(Increase) AS num_Increase
         FROM positions WHERE Position > 0 GROUP BY Date;''')
 
     #Close the connection
@@ -215,9 +216,10 @@ def updatedInpute(end):
     cur.execute('DROP TABLE IF EXISTS sta_records;')
     cur.execute('''CREATE TABLE sta_records AS 
         SELECT Date,
-            COUNT(DISTINCT Holder) AS num_ISIN,
-            COUNT(DISTINCT ISIN) AS num_Issuer,
-            SUM(Covering) AS num_Coverring, SUM(Increase) AS num_Increase
+            COUNT(DISTINCT Holder) AS num_Holder,
+            COUNT(DISTINCT ISIN) AS num_ISIN,
+            SUM(Covering) AS num_Coverring,
+            SUM(Increase) AS num_Increase
         FROM positions WHERE Position > 0 GROUP BY Date;''')
 
     #Close the connection
